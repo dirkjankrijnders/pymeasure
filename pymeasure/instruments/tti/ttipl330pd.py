@@ -104,6 +104,11 @@ PL330PD.reset = Instrument.control(
     """ Reset th power supply """
 )
 
+PL330PD.clear = Instrument.control(
+    "*CLS", "",
+    """ Clear status """
+)
+
 PL330PD.measured_voltage = Instrument.measurement(
     "V1O?",
     """ Return the measured output voltage """,
