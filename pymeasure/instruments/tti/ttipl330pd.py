@@ -49,7 +49,7 @@ class StandardEventStatus(IntFlag):
     EXECUTION_ERROR = 16,
     OPERATION_TIMEOUT_ERROR = 8,
     QUERY_ERROR = 4,
-    OPERATION_COMPLETE  = 1
+    OPERATION_COMPLETE = 1
 
 
 class StatusByte(IntFlag):
@@ -74,6 +74,7 @@ class PL330PD(Instrument):
         self.unit = 1
         self.reset
 
+
 PL330PD.id = Instrument.measurement(
     "*IDN?", """ Reads the instrument identification """
 )
@@ -83,25 +84,25 @@ PL330PD.voltage = Instrument.control(
     """ Controls the set voltage of the power supply in Volts""",
     validator=strict_range,
     values=[0, 32],
-    get_process=lambda x:float(x[3:])
+    get_process=lambda x: float(x[3:])
 )
 
 PL330PD.current = Instrument.control(
     "I1?", "I1 %s",
     """ Controls the set current of the power supply in Volts""",
-    get_process=lambda x:float(x[3:])
+    get_process=lambda x: float(x[3:])
 )
 
 PL330PD.enable = Instrument.control(
     "", "OP1 %s",
     """ Enable the output """,
     validator=strict_discrete_set,
-    values=[0 ,1]
+    values=[0, 1]
 )
 
 PL330PD.reset = Instrument.control(
     "*RST", "",
-    """ Reset th power supply """
+    """ Reset the power supply """
 )
 
 PL330PD.clear = Instrument.control(
@@ -112,43 +113,43 @@ PL330PD.clear = Instrument.control(
 PL330PD.measured_voltage = Instrument.measurement(
     "V1O?",
     """ Return the measured output voltage """,
-    get_process=lambda x:float(x[:-1])
+    get_process=lambda x: float(x[:-1])
 )
 
 PL330PD.measured_current = Instrument.measurement(
     "I1O?",
     """ Return the measured output current """,
-    get_process=lambda x:float(x[:-1])
+    get_process=lambda x: float(x[:-1])
 )
 
 PL330PD.standard_event_status_enable_register = Instrument.control(
     "*ESE?", "*ESE %s",
     """ Returns the value in the Standard Event Status Enable Register """,
-    get_process=lambda x:StandardEventStatus(int(x[:-1]))
+    get_process=lambda x: StandardEventStatus(int(x[:-1]))
 )
 
 PL330PD.standard_event_status_register = Instrument.measurement(
     "*ESR?",
     """ Returns the value in the Standard Event Status Register """,
-    get_process=lambda x:StandardEventStatus(int(x[:-1]))
+    get_process=lambda x: StandardEventStatus(int(x[:-1]))
 )
 
 PL330PD.service_request_enable_register = Instrument.control(
     "*SRE?", "*SRE %s",
     """ Control the Service Request Enable Register""",
     validator=strict_range,
-    values=[0,256],
-    get_process=lambda x:StatusByte(int(x[:-1]))
+    values=[0, 256],
+    get_process=lambda x: StatusByte(int(x[:-1]))
 )
 
 PL330PD.limit_event_status_register = Instrument.measurement(
     "LSR?",
     """ Reads and clears the Limit Event Status Register""",
-    get_process=lambda x:LimitEventStatus(int(x[:-1]))
+    get_process=lambda x: LimitEventStatus(int(x[:-1]))
 )
 
 PL330PD.limit_event_status_enable_register = Instrument.control(
     "LSE?", "LSE %s",
     """ Controls the Limit Event Status Enable Register """,
-    get_process=lambda x:LimitEventStatus(int(x[:-1]))
+    get_process=lambda x: LimitEventStatus(int(x[:-1]))
 )
