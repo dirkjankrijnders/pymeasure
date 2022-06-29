@@ -44,7 +44,6 @@ Instruments by manufacturer:
    ni/index
    oxfordinstruments/index
    parker/index
-   philips/index
    pendulum/index
    razorbill/index
    rohdeschwarz/index
@@ -55,4 +54,5 @@ Instruments by manufacturer:
    thermotron/index
    thorlabs/index
    toptica/index
+   tti/index
    yokogawa/index
