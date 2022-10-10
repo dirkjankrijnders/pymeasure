@@ -9,4 +9,5 @@ This section contains specific documentation on the Philips instruments that are
 .. toctree::
    :maxdepth: 2
 
+   PM2525
    PM6669
