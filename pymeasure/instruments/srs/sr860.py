@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2021 PyMeasure Developers
+# Copyright (c) 2013-2022 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -559,9 +559,9 @@ class SR860(Instrument):
         values=range(0, 16)
     )
 
-    def __init__(self, resourceName, **kwargs):
-        super(SR860, self).__init__(
-            resourceName,
+    def __init__(self, adapter, **kwargs):
+        super().__init__(
+            adapter,
             "Stanford Research Systems SR860 Lock-in amplifier",
             **kwargs
         )

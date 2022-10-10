@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2021 PyMeasure Developers
+# Copyright (c) 2013-2022 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,21 +28,20 @@ import serial
 from pymeasure.adapters import SerialAdapter
 
 
-def make_adapter(**kwargs):
-    return SerialAdapter(serial.serial_for_url("loop://", **kwargs))
+@pytest.fixture
+def adapter():
+    return SerialAdapter(serial.serial_for_url("loop://", timeout=0.2))
 
 
 @pytest.mark.parametrize("msg", ["OUTP\n", "POWER 22 dBm\n"])
-def test_adapter_write(msg):
-    adapter = make_adapter(timeout=0.2)
+def test_adapter_write(adapter, msg):
     adapter.write(msg)
-    assert(adapter.read() == msg)
+    assert adapter.read() == msg
 
 
 @pytest.mark.parametrize("test_input,expected", [([1, 2, 3], b'OUTP#13\x01\x02\x03'),
                                                  (range(100), b'OUTP#3100' + bytes(range(100)))])
-def test_adapter_write_binary_values(test_input, expected):
-    adapter = make_adapter(timeout=0.2)
+def test_adapter_write_binary_values(adapter, test_input, expected):
     adapter.write_binary_values("OUTP", test_input, datatype='B')
     # Add 10 bytes more, just to check that no extra bytes are present
     assert(adapter.connection.read(len(expected) + 10) == expected)

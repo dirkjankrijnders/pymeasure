@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2021 PyMeasure Developers
+# Copyright (c) 2013-2022 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,8 @@
 # THE SOFTWARE.
 #
 
+from decimal import Decimal
 import logging
-
 import os
 import re
 import sys
@@ -33,8 +33,10 @@ from datetime import datetime
 from string import Formatter
 
 import pandas as pd
+import pint
 
 from .procedure import Procedure, UnknownProcedure
+from pymeasure.units import ureg
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -104,14 +106,14 @@ def unique_filename(directory, prefix='DATA', suffix='', ext='csv',
         os.makedirs(directory)
     if index:
         i = 1
-        basename = "%s%s" % (prefix, now.strftime(datetimeformat))
+        basename = f"{prefix}{now.strftime(datetimeformat)}"
         basepath = os.path.join(directory, basename)
         filename = "%s_%d%s.%s" % (basepath, i, suffix, ext)
         while os.path.exists(filename):
             i += 1
             filename = "%s_%d%s.%s" % (basepath, i, suffix, ext)
     else:
-        basename = "%s%s%s.%s" % (prefix, now.strftime(datetimeformat), suffix, ext)
+        basename = f"{prefix}{now.strftime(datetimeformat)}{suffix}.{ext}"
         filename = os.path.join(directory, basename)
     return filename
 
@@ -129,7 +131,19 @@ class CSVFormatter(logging.Formatter):
         """
         super().__init__()
         self.columns = columns
+        self.units = self._parse_columns(columns)
         self.delimiter = delimiter
+
+    @staticmethod
+    def _parse_columns(columns):
+        """Parse the columns to get units in parenthesis."""
+        units_pattern = r"\((?P<units>[\w/\(\)\*\t]+)\)"
+        units = {}
+        for column in columns:
+            match = re.search(units_pattern, column)
+            if match:
+                units[column] = ureg.Quantity(match.groupdict()['units']).units
+        return units
 
     def format(self, record):
         """Formats a record as csv.
@@ -138,13 +152,54 @@ class CSVFormatter(logging.Formatter):
         :type record: dict
         :return: a string
         """
-        return self.delimiter.join('{}'.format(record[x]) for x in self.columns)
+        line = []
+        for x in self.columns:
+            value = record.get(x, float("nan"))
+            units = self.units.get(x, None)
+            if units is not None:
+                if isinstance(value, str):
+                    try:
+                        value = ureg.Quantity(value)
+                    except pint.UndefinedUnitError:
+                        log.warning(
+                            f"Value {value} for column {x} cannot be parsed to"
+                            f" unit {units}.")
+                if isinstance(value, pint.Quantity):
+                    try:
+                        line.append(f"{value.m_as(units)}")
+                    except pint.DimensionalityError:
+                        line.append("nan")
+                        log.warning(
+                            f"Value {value} for column {x} does not have the "
+                            f"right unit {units}.")
+                elif isinstance(value, bool):
+                    line.append("nan")
+                    log.warning(
+                        f"Boolean for column {x} does not have unit {units}.")
+                elif isinstance(value, (float, int, Decimal)):
+                    line.append(f"{value}")
+                else:
+                    line.append("nan")
+                    log.warning(
+                        f"Value {value} for column {x} does not have the right"
+                        f" type for unit {units}.")
+            else:
+                if isinstance(value, pint.Quantity):
+                    if value.units == ureg.dimensionless:
+                        line.append(f"{value.magnitude}")
+                    else:
+                        self.units[x] = value.to_base_units().units
+                        line.append(f"{value.m_as(self.units[x])}")
+                        log.info(f"Column {x} units was set to {self.units[x]}")
+                else:
+                    line.append(f"{value}")
+        return self.delimiter.join(line)
 
     def format_header(self):
         return self.delimiter.join(self.columns)
 
 
-class Results(object):
+class Results:
     """ The Results class provides a convenient interface to reading and
     writing data in connection with a :class:`.Procedure` object.
 
@@ -235,7 +290,7 @@ class Results(object):
         h.append("Procedure: <%s>" % procedure)
         h.append("Parameters:")
         for name, parameter in self.parameters.items():
-            h.append("\t%s: %s" % (parameter.name, str(
+            h.append("\t{}: {}".format(parameter.name, str(
                 parameter).encode("unicode_escape").decode("utf-8")))
         h.append("Data:")
         self._header_count = len(h)
@@ -311,7 +366,7 @@ class Results(object):
                 value = parameters[parameter.name]
                 setattr(procedure, name, value)
             else:
-                raise Exception("Missing '%s' parameter when loading '%s' class" % (
+                raise Exception("Missing '{}' parameter when loading '{}' class".format(
                     parameter.name, procedure_class))
 
         procedure.refresh_parameters()  # Enforce update of meta data
@@ -325,7 +380,7 @@ class Results(object):
         header = ""
         header_read = False
         header_count = 0
-        with open(data_filename, 'r') as f:
+        with open(data_filename) as f:
             while not header_read:
                 line = f.readline()
                 if line.startswith(Results.COMMENT):

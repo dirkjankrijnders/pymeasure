@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2021 PyMeasure Developers
+# Copyright (c) 2013-2022 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -57,11 +57,12 @@ class Danfysik8500(Instrument):
         "PRINT", """ Reads the idenfitication information. """
     )
 
-    def __init__(self, port):
-        super(Danfysik8500, self).__init__(
-            DanfysikAdapter(port),
+    def __init__(self, adapter, **kwargs):
+        super().__init__(
+            DanfysikAdapter(adapter),
             "Danfysik 8500 Current Supply",
-            includeSCPI=False
+            includeSCPI=False,
+            **kwargs
         )
         self.write("ERRT")  # Use text error messages
         self.write("UNLOCK")  # Unlock from remote or local mode
